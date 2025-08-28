@@ -1,0 +1,40 @@
+name: Auto Versioning
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  versioning:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar usuário do Git
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci-bot@example.com"
+
+      - name: Ler e incrementar versão
+        id: version
+        run: |
+          version=$(cat version.txt)
+          version=${version#v}
+          IFS='.' read -r major minor patch <<< "$version"
+          patch=$((patch + 1))
+          new_version="v$major.$minor.$patch"
+          echo "$new_version" > version.txt
+          echo "Nova versão: $new_version"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Fazer commit da nova versão
+        run: |
+          git add version.txt
+          git commit -m "CI: bump version to ${{ steps.version.outputs.new_version }}"
+          git push origin main
